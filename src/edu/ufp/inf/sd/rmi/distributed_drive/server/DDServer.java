@@ -10,7 +10,7 @@ import java.util.logging.Logger;
 public class DDServer {
 
     private SetupContextRMI contextRMI;
-    private DDServiceRI ddServiceRI;
+    private DDFactoryRI ddFactoryRI;
 
     public static void main(String[] args) {
         DDServer server = new DDServer(args);
@@ -30,9 +30,9 @@ public class DDServer {
         try {
             Registry registry = contextRMI.getRegistry();
             if (registry != null) {
-                ddServiceRI = new DDServiceImpl();
+                ddFactoryRI = new DDFactoryImpl();
                 String serviceUrl = contextRMI.getServicesUrl(0);
-                registry.rebind(serviceUrl, ddServiceRI);
+                registry.rebind(serviceUrl, ddFactoryRI);
                 Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Service bound at {0}", serviceUrl);
             }
         } catch (RemoteException e) {

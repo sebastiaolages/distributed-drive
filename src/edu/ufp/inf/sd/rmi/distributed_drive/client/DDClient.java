@@ -1,10 +1,11 @@
 package edu.ufp.inf.sd.rmi.distributed_drive.client;
 
-import edu.ufp.inf.sd.rmi.distributed_drive.server.DDServiceRI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.DDFactoryRI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.DDSessionRI;
 import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
 
-import java.rmi.RemoteException;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.util.Scanner;
 import java.util.logging.Level;
@@ -13,7 +14,7 @@ import java.util.logging.Logger;
 public class DDClient {
 
     private SetupContextRMI contextRMI;
-    private DDServiceRI ddServiceRI;
+    private DDFactoryRI ddFactoryRI;
 
     public static void main(String[] args) {
         DDClient client = new DDClient(args);
@@ -34,7 +35,7 @@ public class DDClient {
         try {
             Registry registry = contextRMI.getRegistry();
             String serviceUrl = contextRMI.getServicesUrl(0);
-            ddServiceRI = (DDServiceRI) registry.lookup(serviceUrl);
+            ddFactoryRI = (DDFactoryRI) registry.lookup(serviceUrl);
         } catch (RemoteException | NotBoundException e) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
         }
@@ -45,7 +46,7 @@ public class DDClient {
         System.out.println("1 - Registar");
         System.out.println("2 - Login");
         int op = sc.nextInt();
-        sc.nextLine(); // limpar buffer
+        sc.nextLine();
 
         System.out.print("Username: ");
         String username = sc.nextLine();
@@ -54,11 +55,15 @@ public class DDClient {
 
         try {
             if (op == 1) {
-                boolean success = ddServiceRI.register(username, password);
+                boolean success = ddFactoryRI.register(username, password);
                 System.out.println(success ? "Registado com sucesso!" : "Username já existe.");
             } else {
-                boolean success = ddServiceRI.login(username, password);
-                System.out.println(success ? "Login com sucesso!" : "Credenciais inválidas.");
+                DDSessionRI session = ddFactoryRI.login(username, password);
+                if (session != null) {
+                    System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
+                } else {
+                    System.out.println("Credenciais inválidas.");
+                }
             }
         } catch (RemoteException e) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
