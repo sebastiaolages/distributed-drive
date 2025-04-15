@@ -1,0 +1,11 @@
+# IntelliJ
+.idea/
+*.iml
+
+# Java compiled files
+*.class
+out/
+*.jar
+
+# Sistema
+.DS_Store
