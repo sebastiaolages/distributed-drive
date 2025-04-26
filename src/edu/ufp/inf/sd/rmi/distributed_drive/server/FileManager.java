@@ -9,8 +9,6 @@ public class FileManager {
     public static final String CLIENTS_BASE_PATH = PROJECT_PATH + "clients/";
     public static final String SERVER_BASE_PATH = PROJECT_PATH + "server/";
 
-
-
     public static void setupUserFolders(String username) {
         String folderName = username + "_LOCAL";
         new File(CLIENTS_BASE_PATH + folderName).mkdirs();
@@ -42,4 +40,33 @@ public class FileManager {
             serverWriter.write(content);
         }
     }
+
+    public static void deleteFileInClientAndServer(String username, String filename) {
+        File clientFile = new File(getClientLocalFolder(username), filename);
+        File serverFile = new File(getServerLocalFolder(username), filename);
+
+        if (clientFile.exists()) {
+            clientFile.delete();
+        }
+
+        if (serverFile.exists()) {
+            serverFile.delete();
+        }
+    }
+
+    public static void renameFileInClientAndServer(String username, String oldName, String newName) {
+        File clientOldFile = new File(getClientLocalFolder(username), oldName);
+        File clientNewFile = new File(getClientLocalFolder(username), newName);
+
+        File serverOldFile = new File(getServerLocalFolder(username), oldName);
+        File serverNewFile = new File(getServerLocalFolder(username), newName);
+
+        if (clientOldFile.exists()) {
+            clientOldFile.renameTo(clientNewFile);
+        }
+        if (serverOldFile.exists()) {
+            serverOldFile.renameTo(serverNewFile);
+        }
+    }
+
 }

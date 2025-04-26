@@ -11,4 +11,8 @@ public interface DDSessionRI extends Remote {
 
     void createFile(String filename, String content) throws RemoteException;
 
+    void deleteFile(String filename) throws RemoteException;
+
+    void renameFile(String oldName, String newName) throws RemoteException;
+
 }

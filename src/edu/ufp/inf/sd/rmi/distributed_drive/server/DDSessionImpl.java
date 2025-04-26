@@ -25,7 +25,6 @@ public class DDSessionImpl extends UnicastRemoteObject implements DDSessionRI {
         return FileManager.listFilesInFolder(FileManager.getClientLocalFolder(username));
     }
 
-
     @Override
     public void createFile(String filename, String content) throws RemoteException {
         try {
@@ -34,4 +33,15 @@ public class DDSessionImpl extends UnicastRemoteObject implements DDSessionRI {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void deleteFile(String filename) throws RemoteException {
+        FileManager.deleteFileInClientAndServer(username, filename);
+    }
+
+    @Override
+    public void renameFile(String oldName, String newName) throws RemoteException {
+        FileManager.renameFileInClientAndServer(username, oldName, newName);
+    }
+
 }

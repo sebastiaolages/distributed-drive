@@ -62,22 +62,48 @@ public class DDClient {
                 if (session != null) {
                     System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
 
-                    System.out.println("Ficheiros locais:");
-                    for (String file : session.listLocalFiles()) {
-                        System.out.println(" - " + file);
-                    }
+                    // NOVO MENU INTERATIVO
+                    while (true) {
+                        System.out.println("Escolha uma opção:");
+                        System.out.println("1 - Criar ficheiro");
+                        System.out.println("2 - Apagar ficheiro");
+                        System.out.println("3 - Listar ficheiros locais");
+                        System.out.println("4 - Renomear ficheiro");
+                        System.out.println("0 - Sair");
 
-                    // NOVO BLOCO ADICIONADO AQUI
-                    System.out.println("Deseja criar um novo ficheiro? (s/n)");
-                    String opcao = sc.nextLine();
+                        int choice = sc.nextInt();
+                        sc.nextLine(); // limpar buffer
 
-                    if (opcao.equalsIgnoreCase("s")) {
-                        System.out.print("Nome do ficheiro: ");
-                        String nome = sc.nextLine();
-                        System.out.print("Conteúdo: ");
-                        String conteudo = sc.nextLine();
-                        session.createFile(nome, conteudo);
-                        System.out.println("Ficheiro criado e sincronizado com o servidor.");
+                        if (choice == 1) {
+                            System.out.print("Nome do ficheiro: ");
+                            String nome = sc.nextLine();
+                            System.out.print("Conteúdo: ");
+                            String conteudo = sc.nextLine();
+                            session.createFile(nome, conteudo);
+                            System.out.println("Ficheiro criado e sincronizado.");
+                        } else if (choice == 2) {
+                            System.out.print("Nome do ficheiro a apagar: ");
+                            String nome = sc.nextLine();
+                            session.deleteFile(nome);
+                            System.out.println("Ficheiro apagado localmente e no servidor.");
+                        } else if (choice == 3) {
+                            System.out.println("Ficheiros locais:");
+                            for (String file : session.listLocalFiles()) {
+                                System.out.println(" - " + file);
+                            }
+                        } else if (choice == 4) {
+                            System.out.print("Nome atual do ficheiro: ");
+                            String oldName = sc.nextLine();
+                            System.out.print("Novo nome do ficheiro: ");
+                            String newName = sc.nextLine();
+                            session.renameFile(oldName, newName);
+                            System.out.println("Ficheiro renomeado localmente e no servidor.");
+                        } else if (choice == 0) {
+                            System.out.println("A sair...");
+                            break;
+                        } else {
+                            System.out.println("Opção inválida.");
+                        }
                     }
 
                 } else {
@@ -88,5 +114,6 @@ public class DDClient {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
         }
     }
+
 
 }
