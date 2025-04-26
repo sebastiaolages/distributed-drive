@@ -61,6 +61,25 @@ public class DDClient {
                 DDSessionRI session = ddFactoryRI.login(username, password);
                 if (session != null) {
                     System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
+
+                    System.out.println("Ficheiros locais:");
+                    for (String file : session.listLocalFiles()) {
+                        System.out.println(" - " + file);
+                    }
+
+                    // NOVO BLOCO ADICIONADO AQUI
+                    System.out.println("Deseja criar um novo ficheiro? (s/n)");
+                    String opcao = sc.nextLine();
+
+                    if (opcao.equalsIgnoreCase("s")) {
+                        System.out.print("Nome do ficheiro: ");
+                        String nome = sc.nextLine();
+                        System.out.print("Conteúdo: ");
+                        String conteudo = sc.nextLine();
+                        session.createFile(nome, conteudo);
+                        System.out.println("Ficheiro criado e sincronizado com o servidor.");
+                    }
+
                 } else {
                     System.out.println("Credenciais inválidas.");
                 }
@@ -69,4 +88,5 @@ public class DDClient {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
         }
     }
+
 }

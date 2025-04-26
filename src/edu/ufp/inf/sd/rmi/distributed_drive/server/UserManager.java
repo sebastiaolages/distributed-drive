@@ -33,8 +33,16 @@ public class UserManager {
     public boolean registerUser(String username, String password) {
         if (users.containsKey(username)) return false;
         users.put(username, password);
-        return saveUserToFile(username, password);
+        boolean saved = saveUserToFile(username, password);
+
+        // Criar as pastas assim que o registo for bem-sucedido
+        if (saved) {
+            FileManager.setupUserFolders(username);
+        }
+
+        return saved;
     }
+
 
     private boolean saveUserToFile(String username, String password) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
