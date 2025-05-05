@@ -3,10 +3,13 @@ package edu.ufp.inf.sd.rmi.distributed_drive.client;
 import edu.ufp.inf.sd.rmi.distributed_drive.server.DDFactoryRI;
 import edu.ufp.inf.sd.rmi.distributed_drive.server.DDSessionRI;
 import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.SubjectRI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.ObserverRI;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,13 +65,17 @@ public class DDClient {
                 if (session != null) {
                     System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
 
+                    // 🟢 Attach do observer após login
+                    ObserverRI myObserver = new ClientObserverImpl();
+                    session.getSubject().attach(myObserver);
+
                     while (true) {
                         System.out.println("Escolha uma opção:");
                         System.out.println("1 - Criar ficheiro");
                         System.out.println("2 - Apagar ficheiro");
                         System.out.println("3 - Listar ficheiros locais");
                         System.out.println("4 - Renomear ficheiro");
-                        System.out.println("5 - Partilhar ficheiro com outro utilizador"); // NOVO
+                        System.out.println("5 - Partilhar ficheiro com outro utilizador");
                         System.out.println("0 - Sair");
 
                         int choice = sc.nextInt();
@@ -103,7 +110,7 @@ public class DDClient {
                             String nome = sc.nextLine();
                             System.out.print("Nome do utilizador destino: ");
                             String destino = sc.nextLine();
-                            session.shareFile(nome, destino); // NOVO
+                            session.shareFile(nome, destino);
                             System.out.println("Ficheiro partilhado com sucesso!");
                         } else if (choice == 0) {
                             System.out.println("A sair...");
@@ -122,6 +129,17 @@ public class DDClient {
         }
     }
 
+    // Classe interna que implementa ObserverRI
+    public class ClientObserverImpl extends UnicastRemoteObject implements ObserverRI {
 
+        public ClientObserverImpl() throws RemoteException {
+            super();
+        }
+
+        @Override
+        public void update(String message) throws RemoteException {
+            System.out.println("[NOTIFICAÇÃO] " + message);
+        }
+    }
 
 }

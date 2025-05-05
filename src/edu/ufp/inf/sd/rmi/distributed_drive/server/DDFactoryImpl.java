@@ -25,11 +25,16 @@ public class DDFactoryImpl extends UnicastRemoteObject implements DDFactoryRI {
     public DDSessionRI login(String username, String password) throws RemoteException {
         if (userManager.loginUser(username, password)) {
             if (!activeSessions.containsKey(username)) {
-                DDSessionRI session = new DDSessionImpl(username);
+                DDSessionRI session = new DDSessionImpl(username, this);
                 activeSessions.put(username, session);
             }
             return activeSessions.get(username);
         }
         return null;
+    }
+
+    // Permitir acesso externo às sessões ativas (para notificar utilizadores)
+    public Map<String, DDSessionRI> getActiveSessions() {
+        return activeSessions;
     }
 }

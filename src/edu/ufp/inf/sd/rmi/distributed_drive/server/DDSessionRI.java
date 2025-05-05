@@ -17,5 +17,7 @@ public interface DDSessionRI extends Remote {
 
     void shareFile(String filename, String targetUsername) throws RemoteException;
 
+    SubjectRI getSubject() throws RemoteException;
+
 
 }

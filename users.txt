@@ -1,4 +1,2 @@
-mario:mario123
-ssebas:ssebas
 rui:1234
 sebas:1234
