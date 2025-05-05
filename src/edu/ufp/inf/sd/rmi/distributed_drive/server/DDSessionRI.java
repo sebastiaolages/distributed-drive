@@ -15,4 +15,7 @@ public interface DDSessionRI extends Remote {
 
     void renameFile(String oldName, String newName) throws RemoteException;
 
+    void shareFile(String filename, String targetUsername) throws RemoteException;
+
+
 }

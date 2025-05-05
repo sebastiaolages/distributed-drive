@@ -1,4 +1,4 @@
 mario:mario123
 ssebas:ssebas
-rui:rui
+rui:1234
 sebas:1234

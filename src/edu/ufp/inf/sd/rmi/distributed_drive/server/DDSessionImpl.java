@@ -44,4 +44,14 @@ public class DDSessionImpl extends UnicastRemoteObject implements DDSessionRI {
         FileManager.renameFileInClientAndServer(username, oldName, newName);
     }
 
+    @Override
+    public void shareFile(String filename, String targetUsername) throws RemoteException {
+        try {
+            FileManager.shareFile(username, filename, targetUsername);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 }

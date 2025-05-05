@@ -62,17 +62,17 @@ public class DDClient {
                 if (session != null) {
                     System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
 
-                    // NOVO MENU INTERATIVO
                     while (true) {
                         System.out.println("Escolha uma opção:");
                         System.out.println("1 - Criar ficheiro");
                         System.out.println("2 - Apagar ficheiro");
                         System.out.println("3 - Listar ficheiros locais");
                         System.out.println("4 - Renomear ficheiro");
+                        System.out.println("5 - Partilhar ficheiro com outro utilizador"); // NOVO
                         System.out.println("0 - Sair");
 
                         int choice = sc.nextInt();
-                        sc.nextLine(); // limpar buffer
+                        sc.nextLine();
 
                         if (choice == 1) {
                             System.out.print("Nome do ficheiro: ");
@@ -98,6 +98,13 @@ public class DDClient {
                             String newName = sc.nextLine();
                             session.renameFile(oldName, newName);
                             System.out.println("Ficheiro renomeado localmente e no servidor.");
+                        } else if (choice == 5) {
+                            System.out.print("Nome do ficheiro a partilhar: ");
+                            String nome = sc.nextLine();
+                            System.out.print("Nome do utilizador destino: ");
+                            String destino = sc.nextLine();
+                            session.shareFile(nome, destino); // NOVO
+                            System.out.println("Ficheiro partilhado com sucesso!");
                         } else if (choice == 0) {
                             System.out.println("A sair...");
                             break;
@@ -114,6 +121,7 @@ public class DDClient {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
         }
     }
+
 
 
 }

@@ -1,6 +1,7 @@
 package edu.ufp.inf.sd.rmi.distributed_drive.server;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 
@@ -10,13 +11,17 @@ public class FileManager {
     public static final String SERVER_BASE_PATH = PROJECT_PATH + "server/";
 
     public static void setupUserFolders(String username) {
-        String folderName = username + "_LOCAL";
-        new File(CLIENTS_BASE_PATH + folderName).mkdirs();
-        new File(SERVER_BASE_PATH + folderName).mkdirs();
+        new File(CLIENTS_BASE_PATH + username + "_LOCAL").mkdirs();
+        new File(CLIENTS_BASE_PATH + username + "_SHARED").mkdirs();
+        new File(SERVER_BASE_PATH + username + "_LOCAL").mkdirs();
     }
 
     public static File getClientLocalFolder(String username) {
         return new File(CLIENTS_BASE_PATH + username + "_LOCAL");
+    }
+
+    public static File getClientSharedFolder(String username) {
+        return new File(CLIENTS_BASE_PATH + username + "_SHARED");
     }
 
     public static File getServerLocalFolder(String username) {
@@ -69,4 +74,25 @@ public class FileManager {
         }
     }
 
+    public static void shareFile(String originUsername, String filename, String targetUsername) throws IOException {
+        File originFile = new File(getClientLocalFolder(originUsername), filename);
+        File targetShared = new File(getClientSharedFolder(targetUsername), filename);
+        File targetServerLocal = new File(getServerLocalFolder(targetUsername), filename);
+
+        if (!originFile.exists()) {
+            throw new FileNotFoundException("Ficheiro a partilhar não existe.");
+        }
+
+        String content = new String(Files.readAllBytes(originFile.toPath()));
+
+        // Escreve no shared do cliente destino
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetShared))) {
+            writer.write(content);
+        }
+
+        // Escreve no local do servidor destino
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetServerLocal))) {
+            writer.write(content);
+        }
+    }
 }
