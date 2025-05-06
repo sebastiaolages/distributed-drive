@@ -69,4 +69,29 @@ public class DDSessionImpl extends UnicastRemoteObject implements DDSessionRI {
             e.printStackTrace();
         }
     }
+
+    // NOVOS MÉTODOS - Gestão de Pastas
+
+    @Override
+    public void createFolder(String folderName) throws RemoteException {
+        FileManager.createFolder(username, folderName);
+        subject.notifyObservers("Pasta '" + folderName + "' foi criada.");
+    }
+
+    @Override
+    public void deleteFolder(String folderName) throws RemoteException {
+        FileManager.deleteFolder(username, folderName);
+        subject.notifyObservers("Pasta '" + folderName + "' foi apagada.");
+    }
+
+    @Override
+    public void renameFolder(String oldName, String newName) throws RemoteException {
+        FileManager.renameFolder(username, oldName, newName);
+        subject.notifyObservers("Pasta renomeada de '" + oldName + "' para '" + newName + "'.");
+    }
+
+    @Override
+    public List<String> listAllLocalContent() throws RemoteException {
+        return FileManager.listAllRecursive(FileManager.getClientLocalFolder(username), "");
+    }
 }

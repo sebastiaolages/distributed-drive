@@ -76,6 +76,10 @@ public class DDClient {
                         System.out.println("3 - Listar ficheiros locais");
                         System.out.println("4 - Renomear ficheiro");
                         System.out.println("5 - Partilhar ficheiro com outro utilizador");
+                        System.out.println("6 - Criar pasta");
+                        System.out.println("7 - Apagar pasta");
+                        System.out.println("8 - Renomear pasta");
+                        System.out.println("9 - Listar estrutura completa");
                         System.out.println("0 - Sair");
 
                         int choice = sc.nextInt();
@@ -112,6 +116,28 @@ public class DDClient {
                             String destino = sc.nextLine();
                             session.shareFile(nome, destino);
                             System.out.println("Ficheiro partilhado com sucesso!");
+                        } else if (choice == 6) {
+                            System.out.print("Nome da nova pasta: ");
+                            String nome = sc.nextLine();
+                            session.createFolder(nome);
+                            System.out.println("Pasta criada com sucesso.");
+                        } else if (choice == 7) {
+                            System.out.print("Nome da pasta a apagar: ");
+                            String nome = sc.nextLine();
+                            session.deleteFolder(nome);
+                            System.out.println("Pasta apagada com sucesso.");
+                        } else if (choice == 8) {
+                            System.out.print("Nome atual da pasta: ");
+                            String oldName = sc.nextLine();
+                            System.out.print("Novo nome da pasta: ");
+                            String newName = sc.nextLine();
+                            session.renameFolder(oldName, newName);
+                            System.out.println("Pasta renomeada com sucesso.");
+                        } else if (choice == 9) {
+                            System.out.println("Conteúdo completo:");
+                            for (String path : session.listAllLocalContent()) {
+                                System.out.println(" - " + path);
+                            }
                         } else if (choice == 0) {
                             System.out.println("A sair...");
                             break;

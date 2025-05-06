@@ -19,5 +19,12 @@ public interface DDSessionRI extends Remote {
 
     SubjectRI getSubject() throws RemoteException;
 
+    // Gestão de Pastas
+    void createFolder(String folderName) throws RemoteException;
 
+    void deleteFolder(String folderName) throws RemoteException;
+
+    void renameFolder(String oldName, String newName) throws RemoteException;
+
+    List<String> listAllLocalContent() throws RemoteException;
 }
