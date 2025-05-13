@@ -138,6 +138,13 @@ public class DDClient {
                             for (String path : session.listAllLocalContent()) {
                                 System.out.println(" - " + path);
                             }
+                        } else if (choice == 10) {
+                            System.out.print("Nome da pasta a partilhar: ");
+                            String folder = sc.nextLine();
+                            System.out.print("Nome do utilizador destino: ");
+                            String destino = sc.nextLine();
+                            session.shareFolder(folder, destino);
+                            System.out.println("Pasta partilhada com sucesso!");
                         } else if (choice == 0) {
                             System.out.println("A sair...");
                             break;

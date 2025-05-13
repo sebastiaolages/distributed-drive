@@ -27,4 +27,7 @@ public interface DDSessionRI extends Remote {
     void renameFolder(String oldName, String newName) throws RemoteException;
 
     List<String> listAllLocalContent() throws RemoteException;
+
+    void shareFolder(String folderName, String targetUsername) throws RemoteException;
+
 }

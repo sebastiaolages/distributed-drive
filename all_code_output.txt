@@ -1,0 +1,1097 @@
+﻿package edu.ufp.inf.sd.rabbitmq.rabbitmq.distributed_drive2.consumer;
+
+public class DDClientRabbitMQ {
+
+    public static void main(String[] args) {
+        System.out.println("[CLIENT] A ouvir mensagens...");
+        RMQConsumer.startConsumer();
+    }
+}
+package edu.ufp.inf.sd.rabbitmq.rabbitmq.distributed_drive2.consumer;
+
+import com.rabbitmq.client.*;
+
+public class RMQConsumer {
+
+    private final static String QUEUE_NAME = "project_final_queue";
+
+    public static void startConsumer() {
+        try {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost("localhost");
+            Connection connection = factory.newConnection();
+            Channel channel = connection.createChannel();
+
+            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+            System.out.println("[RabbitMQ] A ouvir mensagens na fila: " + QUEUE_NAME);
+
+            DeliverCallback deliverCallback = (consumerTag, delivery) -> {
+                String mensagem = new String(delivery.getBody(), "UTF-8");
+                System.out.println("[RabbitMQ] RECEBIDO: '" + mensagem + "'");
+            };
+
+            channel.basicConsume(QUEUE_NAME, true, deliverCallback, consumerTag -> {});
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+package edu.ufp.inf.sd.rabbitmq.rabbitmq.distributed_drive2.producer;
+
+public class DDServerRabbitMQ {
+
+    public static void main(String[] args) {
+        // Simula uma operaÃ§Ã£o feita no "servidor"
+        String mensagem = "Servidor criou ficheiro exemplo.txt";
+        RMQPublisher.publishUpdate(mensagem);
+        System.out.println("[SERVER] Enviada mensagem: " + mensagem);
+    }
+}
+package edu.ufp.inf.sd.rabbitmq.rabbitmq.distributed_drive2.producer;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+public class RMQPublisher {
+
+    private final static String QUEUE_NAME = "project_final_queue";
+
+    public static void publishUpdate(String message) {
+        try {
+            ConnectionFactory factory = new ConnectionFactory();
+            factory.setHost("localhost");
+            try (Connection connection = factory.newConnection();
+                 Channel channel = connection.createChannel()) {
+                channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+                channel.basicPublish("", QUEUE_NAME, null, message.getBytes("UTF-8"));
+                System.out.println("[RabbitMQ] Mensagem publicada: '" + message + "'");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+package edu.ufp.inf.sd.rabbitmqservices.util;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class RabbitUtils {
+
+    /**
+     * Create a connection to the rabbitmq server/broker
+     * (abstracts the socket connection, protocol version negotiation and authentication, etc.)
+     */
+    public static Connection newConnection2Server(String host, int port, String username, String passwd) throws IOException, TimeoutException {
+        Logger.getAnonymousLogger().log(Level.INFO, Thread.currentThread().getName() + "->newConnection2Server(): host=" + host+", port="+port);
+        //Create a factory for connection establishment
+        ConnectionFactory factory=new ConnectionFactory();
+        factory.setHost(host);
+        factory.setPort(port);
+        //Use same username/passwd as for accessing Management UI @ http://localhost:15672/
+        //Default credentials are: guest/guest (change accordingly)
+        factory.setUsername(username);
+        factory.setPassword(passwd);
+
+        //Create a channel which offers most of the API methods to rabbitmq broker
+        Connection connection=factory.newConnection();
+        return connection;
+    }
+
+    /**
+     * Create a channel to the rabbitmq server/broker
+     */
+    public static Channel createChannel2Server(Connection connection) throws IOException, TimeoutException {
+        Channel channel=connection.createChannel();
+        return channel;
+    }
+
+    /**
+     * Selects the routing key from a set of keys
+     *
+     * @param setOfKeys
+     * @param routingKeyIndex
+     * @return
+     */
+    public static String getRouting(String[] setOfKeys, int routingKeyIndex) {
+        if (setOfKeys.length < routingKeyIndex) {
+            return "anonymous.info";
+        }
+        return setOfKeys[routingKeyIndex];
+    }
+
+    /**
+     * Selects the message from a set of messages
+     *
+     * @param messages
+     * @param messageIndex
+     * @return
+     */
+    public static String getMessage(String[] messages, int messageIndex) {
+        if (messages.length < messageIndex) {
+            return "Hello World!";
+        }
+        return joinStrings(messages, " ", messageIndex);
+    }
+
+    public static void printArgs(String[] args) {
+        for (int i=0; i<args.length; i++) {
+            Logger.getAnonymousLogger().log(Level.INFO, Thread.currentThread().getName() + "->printArgs(): args[" + i + "]="+args[i]);
+        }
+    }
+
+    /**
+     * Concatenates a set of strings, separated by a given delimiter
+     *
+     * @param strings
+     * @param delimiter
+     * @param startMsgIndex
+     * @return
+     */
+    public static String joinStrings(String[] strings, String delimiter, int startMsgIndex) {
+        int length=strings.length;
+        Logger.getAnonymousLogger().log(Level.INFO, Thread.currentThread().getName() + "->joinStrings(): strings.length=" + length);
+
+        if (length < startMsgIndex) {
+            return "";
+        }
+        StringBuilder words=new StringBuilder(strings[startMsgIndex]);
+        for (int i=startMsgIndex + 1; i < length; i++) {
+            words.append(delimiter).append(strings[i]);
+        }
+        Logger.getAnonymousLogger().log(Level.INFO, Thread.currentThread().getName() + "->joinStrings(): words = " + words.toString());
+        return words.toString();
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.client;
+
+import edu.ufp.inf.sd.rmi.distributed_drive.server.DDFactoryRI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.DDSessionRI;
+import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.SubjectRI;
+import edu.ufp.inf.sd.rmi.distributed_drive.server.ObserverRI;
+
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class DDClient {
+
+    private SetupContextRMI contextRMI;
+    private DDFactoryRI ddFactoryRI;
+
+    public static void main(String[] args) {
+        DDClient client = new DDClient(args);
+        client.lookupService();
+        client.showMenu();
+    }
+
+    public DDClient(String[] args) {
+        try {
+            SetupContextRMI.printArgs(this.getClass().getName(), args);
+            contextRMI = new SetupContextRMI(this.getClass(), args[0], args[1], new String[]{args[2]});
+        } catch (RemoteException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    private void lookupService() {
+        try {
+            Registry registry = contextRMI.getRegistry();
+            String serviceUrl = contextRMI.getServicesUrl(0);
+            ddFactoryRI = (DDFactoryRI) registry.lookup(serviceUrl);
+        } catch (RemoteException | NotBoundException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    private void showMenu() {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("1 - Registar");
+        System.out.println("2 - Login");
+        int op = sc.nextInt();
+        sc.nextLine();
+
+        System.out.print("Username: ");
+        String username = sc.nextLine();
+        System.out.print("Password: ");
+        String password = sc.nextLine();
+
+        try {
+            if (op == 1) {
+                boolean success = ddFactoryRI.register(username, password);
+                System.out.println(success ? "Registado com sucesso!" : "Username jÃ¡ existe.");
+            } else {
+                DDSessionRI session = ddFactoryRI.login(username, password);
+                if (session != null) {
+                    System.out.println("Login com sucesso! Bem-vindo " + session.getUsername());
+
+                    // ðŸŸ¢ Attach do observer apÃ³s login
+                    ObserverRI myObserver = new ClientObserverImpl();
+                    session.getSubject().attach(myObserver);
+
+                    while (true) {
+                        System.out.println("Escolha uma opÃ§Ã£o:");
+                        System.out.println("1 - Criar ficheiro");
+                        System.out.println("2 - Apagar ficheiro");
+                        System.out.println("3 - Listar ficheiros locais");
+                        System.out.println("4 - Renomear ficheiro");
+                        System.out.println("5 - Partilhar ficheiro com outro utilizador");
+                        System.out.println("6 - Criar pasta");
+                        System.out.println("7 - Apagar pasta");
+                        System.out.println("8 - Renomear pasta");
+                        System.out.println("9 - Listar estrutura completa");
+                        System.out.println("0 - Sair");
+
+                        int choice = sc.nextInt();
+                        sc.nextLine();
+
+                        if (choice == 1) {
+                            System.out.print("Nome do ficheiro: ");
+                            String nome = sc.nextLine();
+                            System.out.print("ConteÃºdo: ");
+                            String conteudo = sc.nextLine();
+                            session.createFile(nome, conteudo);
+                            System.out.println("Ficheiro criado e sincronizado.");
+                        } else if (choice == 2) {
+                            System.out.print("Nome do ficheiro a apagar: ");
+                            String nome = sc.nextLine();
+                            session.deleteFile(nome);
+                            System.out.println("Ficheiro apagado localmente e no servidor.");
+                        } else if (choice == 3) {
+                            System.out.println("Ficheiros locais:");
+                            for (String file : session.listLocalFiles()) {
+                                System.out.println(" - " + file);
+                            }
+                        } else if (choice == 4) {
+                            System.out.print("Nome atual do ficheiro: ");
+                            String oldName = sc.nextLine();
+                            System.out.print("Novo nome do ficheiro: ");
+                            String newName = sc.nextLine();
+                            session.renameFile(oldName, newName);
+                            System.out.println("Ficheiro renomeado localmente e no servidor.");
+                        } else if (choice == 5) {
+                            System.out.print("Nome do ficheiro a partilhar: ");
+                            String nome = sc.nextLine();
+                            System.out.print("Nome do utilizador destino: ");
+                            String destino = sc.nextLine();
+                            session.shareFile(nome, destino);
+                            System.out.println("Ficheiro partilhado com sucesso!");
+                        } else if (choice == 6) {
+                            System.out.print("Nome da nova pasta: ");
+                            String nome = sc.nextLine();
+                            session.createFolder(nome);
+                            System.out.println("Pasta criada com sucesso.");
+                        } else if (choice == 7) {
+                            System.out.print("Nome da pasta a apagar: ");
+                            String nome = sc.nextLine();
+                            session.deleteFolder(nome);
+                            System.out.println("Pasta apagada com sucesso.");
+                        } else if (choice == 8) {
+                            System.out.print("Nome atual da pasta: ");
+                            String oldName = sc.nextLine();
+                            System.out.print("Novo nome da pasta: ");
+                            String newName = sc.nextLine();
+                            session.renameFolder(oldName, newName);
+                            System.out.println("Pasta renomeada com sucesso.");
+                        } else if (choice == 9) {
+                            System.out.println("ConteÃºdo completo:");
+                            for (String path : session.listAllLocalContent()) {
+                                System.out.println(" - " + path);
+                            }
+                        } else if (choice == 0) {
+                            System.out.println("A sair...");
+                            break;
+                        } else {
+                            System.out.println("OpÃ§Ã£o invÃ¡lida.");
+                        }
+                    }
+
+                } else {
+                    System.out.println("Credenciais invÃ¡lidas.");
+                }
+            }
+        } catch (RemoteException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    // Classe interna que implementa ObserverRI
+    public class ClientObserverImpl extends UnicastRemoteObject implements ObserverRI {
+
+        public ClientObserverImpl() throws RemoteException {
+            super();
+        }
+
+        @Override
+        public void update(String message) throws RemoteException {
+            System.out.println("[NOTIFICAÃ‡ÃƒO] " + message);
+        }
+    }
+
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.util.Map;
+
+public class DDFactoryImpl extends UnicastRemoteObject implements DDFactoryRI {
+
+    private final UserManager userManager;
+    private final Map<String, DDSessionRI> activeSessions;
+
+    public DDFactoryImpl() throws RemoteException {
+        super();
+        this.userManager = new UserManager();
+        this.activeSessions = new HashMap<>();
+    }
+
+    @Override
+    public boolean register(String username, String password) throws RemoteException {
+        return userManager.registerUser(username, password);
+    }
+
+    @Override
+    public DDSessionRI login(String username, String password) throws RemoteException {
+        if (userManager.loginUser(username, password)) {
+            if (!activeSessions.containsKey(username)) {
+                DDSessionRI session = new DDSessionImpl(username, this);
+                activeSessions.put(username, session);
+            }
+            return activeSessions.get(username);
+        }
+        return null;
+    }
+
+    // Permitir acesso externo Ã s sessÃµes ativas (para notificar utilizadores)
+    public Map<String, DDSessionRI> getActiveSessions() {
+        return activeSessions;
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface DDFactoryRI extends Remote {
+    DDSessionRI login(String username, String password) throws RemoteException;
+    boolean register(String username, String password) throws RemoteException;
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import edu.ufp.inf.sd.rmi.util.rmisetup.SetupContextRMI;
+
+import java.rmi.RemoteException;
+import java.rmi.registry.Registry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+public class DDServer {
+
+    private SetupContextRMI contextRMI;
+    private DDFactoryRI ddFactoryRI;
+
+    public static void main(String[] args) {
+        DDServer server = new DDServer(args);
+        server.rebindService();
+    }
+
+    public DDServer(String[] args) {
+        try {
+            SetupContextRMI.printArgs(this.getClass().getName(), args);
+            contextRMI = new SetupContextRMI(this.getClass(), args[0], args[1], new String[]{args[2]});
+        } catch (RemoteException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+        }
+    }
+
+    private void rebindService() {
+        try {
+            Registry registry = contextRMI.getRegistry();
+            if (registry != null) {
+                ddFactoryRI = new DDFactoryImpl();
+                String serviceUrl = contextRMI.getServicesUrl(0);
+                registry.rebind(serviceUrl, ddFactoryRI);
+                Logger.getLogger(this.getClass().getName()).log(Level.INFO, "Service bound at {0}", serviceUrl);
+            }
+        } catch (RemoteException e) {
+            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+        }
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.io.IOException;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.List;
+
+public class DDSessionImpl extends UnicastRemoteObject implements DDSessionRI {
+
+    private final String username;
+    private final SubjectRI subject;
+    private final DDFactoryImpl factory;
+
+    public DDSessionImpl(String username, DDFactoryImpl factory) throws RemoteException {
+        super();
+        this.username = username;
+        this.factory = factory;
+        this.subject = new SubjectImpl();
+        FileManager.setupUserFolders(username);
+    }
+
+    @Override
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public SubjectRI getSubject() throws RemoteException {
+        return subject;
+    }
+
+    @Override
+    public List<String> listLocalFiles() throws RemoteException {
+        return FileManager.listFilesInFolder(FileManager.getClientLocalFolder(username));
+    }
+
+    @Override
+    public void createFile(String filename, String content) throws RemoteException {
+        try {
+            FileManager.createFileInClientAndSyncToServer(username, filename, content);
+            subject.notifyObservers("Ficheiro '" + filename + "' foi criado.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void deleteFile(String filename) throws RemoteException {
+        FileManager.deleteFileInClientAndServer(username, filename);
+        subject.notifyObservers("Ficheiro '" + filename + "' foi apagado.");
+    }
+
+    @Override
+    public void renameFile(String oldName, String newName) throws RemoteException {
+        FileManager.renameFileInClientAndServer(username, oldName, newName);
+        subject.notifyObservers("Ficheiro renomeado de '" + oldName + "' para '" + newName + "'.");
+    }
+
+    @Override
+    public void shareFile(String filename, String targetUsername) throws RemoteException {
+        try {
+            FileManager.shareFile(username, filename, targetUsername);
+
+            DDSessionRI targetSession = factory.getActiveSessions().get(targetUsername);
+            if (targetSession != null) {
+                targetSession.getSubject().notifyObservers("Recebeu um ficheiro partilhado de " + username + ": " + filename);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // NOVOS MÃ‰TODOS - GestÃ£o de Pastas
+
+    @Override
+    public void createFolder(String folderName) throws RemoteException {
+        FileManager.createFolder(username, folderName);
+        subject.notifyObservers("Pasta '" + folderName + "' foi criada.");
+    }
+
+    @Override
+    public void deleteFolder(String folderName) throws RemoteException {
+        FileManager.deleteFolder(username, folderName);
+        subject.notifyObservers("Pasta '" + folderName + "' foi apagada.");
+    }
+
+    @Override
+    public void renameFolder(String oldName, String newName) throws RemoteException {
+        FileManager.renameFolder(username, oldName, newName);
+        subject.notifyObservers("Pasta renomeada de '" + oldName + "' para '" + newName + "'.");
+    }
+
+    @Override
+    public List<String> listAllLocalContent() throws RemoteException {
+        return FileManager.listAllRecursive(FileManager.getClientLocalFolder(username), "");
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+import java.util.List;
+
+public interface DDSessionRI extends Remote {
+    String getUsername() throws RemoteException;
+
+    List<String> listLocalFiles() throws RemoteException;
+
+    void createFile(String filename, String content) throws RemoteException;
+
+    void deleteFile(String filename) throws RemoteException;
+
+    void renameFile(String oldName, String newName) throws RemoteException;
+
+    void shareFile(String filename, String targetUsername) throws RemoteException;
+
+    SubjectRI getSubject() throws RemoteException;
+
+    // GestÃ£o de Pastas
+    void createFolder(String folderName) throws RemoteException;
+
+    void deleteFolder(String folderName) throws RemoteException;
+
+    void renameFolder(String oldName, String newName) throws RemoteException;
+
+    List<String> listAllLocalContent() throws RemoteException;
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+public class FileManager {
+    public static final String PROJECT_PATH = new File("").getAbsolutePath().split("out")[0];
+    public static final String CLIENTS_BASE_PATH = PROJECT_PATH + "clients/";
+    public static final String SERVER_BASE_PATH = PROJECT_PATH + "server/";
+
+    // Setup de diretÃ³rios do user
+    public static void setupUserFolders(String username) {
+        new File(CLIENTS_BASE_PATH + username + "_LOCAL").mkdirs();
+        new File(CLIENTS_BASE_PATH + username + "_SHARED").mkdirs();
+        new File(SERVER_BASE_PATH + username + "_LOCAL").mkdirs();
+    }
+
+    // Getters de diretÃ³rios
+    public static File getClientLocalFolder(String username) {
+        return new File(CLIENTS_BASE_PATH + username + "_LOCAL");
+    }
+
+    public static File getClientSharedFolder(String username) {
+        return new File(CLIENTS_BASE_PATH + username + "_SHARED");
+    }
+
+    public static File getServerLocalFolder(String username) {
+        return new File(SERVER_BASE_PATH + username + "_LOCAL");
+    }
+
+    // OperaÃ§Ãµes com arquivos
+    public static List<String> listFilesInFolder(File folder) {
+        String[] files = folder.list();
+        return (files != null) ? Arrays.asList(files) : new ArrayList<>();
+    }
+
+    public static void createFileInClientAndSyncToServer(String username, String filename, String content) throws IOException {
+        File clientFile = new File(getClientLocalFolder(username), filename);
+        File serverFile = new File(getServerLocalFolder(username), filename);
+
+        try (BufferedWriter clientWriter = new BufferedWriter(new FileWriter(clientFile))) {
+            clientWriter.write(content);
+        }
+
+        try (BufferedWriter serverWriter = new BufferedWriter(new FileWriter(serverFile))) {
+            serverWriter.write(content);
+        }
+    }
+
+    public static void deleteFileInClientAndServer(String username, String filename) {
+        File clientFile = new File(getClientLocalFolder(username), filename);
+        File serverFile = new File(getServerLocalFolder(username), filename);
+
+        if (clientFile.exists()) clientFile.delete();
+        if (serverFile.exists()) serverFile.delete();
+    }
+
+    public static void renameFileInClientAndServer(String username, String oldName, String newName) {
+        File clientOldFile = new File(getClientLocalFolder(username), oldName);
+        File clientNewFile = new File(getClientLocalFolder(username), newName);
+
+        File serverOldFile = new File(getServerLocalFolder(username), oldName);
+        File serverNewFile = new File(getServerLocalFolder(username), newName);
+
+        if (clientOldFile.exists()) clientOldFile.renameTo(clientNewFile);
+        if (serverOldFile.exists()) serverOldFile.renameTo(serverNewFile);
+    }
+
+    public static void shareFile(String originUsername, String filename, String targetUsername) throws IOException {
+        File originFile = new File(getClientLocalFolder(originUsername), filename);
+        File targetShared = new File(getClientSharedFolder(targetUsername), filename);
+        File targetServerLocal = new File(getServerLocalFolder(targetUsername), filename);
+
+        if (!originFile.exists()) throw new FileNotFoundException("Ficheiro a partilhar nÃ£o existe.");
+
+        String content = new String(Files.readAllBytes(originFile.toPath()));
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetShared))) {
+            writer.write(content);
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(targetServerLocal))) {
+            writer.write(content);
+        }
+    }
+
+    // NOVAS FUNÃ‡Ã•ES â€“ Gestao de Pastas
+
+    public static void createFolder(String username, String folderName) {
+        File localFolder = new File(getClientLocalFolder(username), folderName);
+        File serverFolder = new File(getServerLocalFolder(username), folderName);
+
+        localFolder.mkdirs();
+        serverFolder.mkdirs();
+    }
+
+    public static void deleteFolder(String username, String folderName) {
+        File localFolder = new File(getClientLocalFolder(username), folderName);
+        File serverFolder = new File(getServerLocalFolder(username), folderName);
+
+        deleteRecursive(localFolder);
+        deleteRecursive(serverFolder);
+    }
+
+    public static void renameFolder(String username, String oldName, String newName) {
+        File localOld = new File(getClientLocalFolder(username), oldName);
+        File localNew = new File(getClientLocalFolder(username), newName);
+
+        File serverOld = new File(getServerLocalFolder(username), oldName);
+        File serverNew = new File(getServerLocalFolder(username), newName);
+
+        localOld.renameTo(localNew);
+        serverOld.renameTo(serverNew);
+    }
+
+    public static List<String> listAllRecursive(File dir, String prefix) {
+        List<String> all = new ArrayList<>();
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File f : files) {
+                String path = prefix + f.getName();
+                all.add(path + (f.isDirectory() ? "/" : ""));
+                if (f.isDirectory()) {
+                    all.addAll(listAllRecursive(f, path + "/"));
+                }
+            }
+        }
+        return all;
+    }
+
+    private static void deleteRecursive(File fileOrDir) {
+        if (fileOrDir.isDirectory()) {
+            for (File child : fileOrDir.listFiles()) {
+                deleteRecursive(child);
+            }
+        }
+        fileOrDir.delete();
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface ObserverRI extends Remote {
+    void update(String message) throws RemoteException;
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
+import java.util.List;
+
+public class SubjectImpl extends UnicastRemoteObject implements SubjectRI {
+
+    private final List<ObserverRI> observers;
+
+    public SubjectImpl() throws RemoteException {
+        super();
+        observers = new ArrayList<>();
+    }
+
+    @Override
+    public void attach(ObserverRI observer) throws RemoteException {
+        if (!observers.contains(observer)) {
+            observers.add(observer);
+        }
+    }
+
+    @Override
+    public void detach(ObserverRI observer) throws RemoteException {
+        observers.remove(observer);
+    }
+
+    @Override
+    public void notifyObservers(String message) throws RemoteException {
+        for (ObserverRI o : observers) {
+            o.update(message);
+        }
+    }
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.rmi.Remote;
+import java.rmi.RemoteException;
+
+public interface SubjectRI extends Remote {
+    void attach(ObserverRI observer) throws RemoteException;
+    void detach(ObserverRI observer) throws RemoteException;
+    void notifyObservers(String message) throws RemoteException;
+}
+package edu.ufp.inf.sd.rmi.distributed_drive.server;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+
+public class UserManager {
+    private static final String FILE_PATH = "C:\\Users\\sebas\\Desktop\\faculdade\\sd\\projeto_finalSD2025\\users.txt";
+
+    private final Map<String, String> users = new HashMap<>();
+
+    public UserManager() {
+        loadUsersFromFile();
+    }
+
+    private void loadUsersFromFile() {
+        File file = new File(FILE_PATH);
+        if (!file.exists()) return;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(":");
+                if (parts.length == 2) {
+                    users.put(parts[0], parts[1]);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public boolean registerUser(String username, String password) {
+        if (users.containsKey(username)) return false;
+        users.put(username, password);
+        boolean saved = saveUserToFile(username, password);
+
+        // Criar as pastas assim que o registo for bem-sucedido
+        if (saved) {
+            FileManager.setupUserFolders(username);
+        }
+
+        return saved;
+    }
+
+
+    private boolean saveUserToFile(String username, String password) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_PATH, true))) {
+            writer.write(username + ":" + password);
+            writer.newLine();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean loginUser(String username, String password) {
+        return users.containsKey(username) && users.get(username).equals(password);
+    }
+}
+package edu.ufp.inf.sd.rmi.util.rmisetup;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author rui
+ */
+public class SetupContextRMI {
+
+    private Registry registry;
+    private InetAddress localHostInetAddress;
+    private String localHostName;
+    private String localHostAddress;
+
+    private final Class subsystemClass;
+    private final String registryHostIP;
+    private final int registryHostPort;
+    private final String serviceNames[];
+    private final String serviceUrls[];
+    private final Logger logger;
+
+    /**
+     *
+     * @param subsystemClass
+     * @param registryHostIP
+     * @param registryHostPort
+     * @param serviceNames
+     * @throws java.rmi.RemoteException
+     */
+    public SetupContextRMI(Class subsystemClass, String registryHostIP, String registryHostPort, String serviceNames[]) throws RemoteException {
+        this.logger = Logger.getLogger(subsystemClass.getName());
+
+        logger.log(Level.INFO, "setup context for subsystemClass {0}", subsystemClass.getName());
+        this.subsystemClass = subsystemClass;
+
+        logger.log(Level.INFO, "serviceNames.length = {0}", serviceNames.length);
+
+        this.serviceNames = new String[serviceNames.length];
+        System.arraycopy(serviceNames, 0, this.serviceNames, 0, serviceNames.length);
+        for (int i = 0; i < serviceNames.length; i++) {
+            logger.log(Level.INFO, "serviceNames[{0}] = {1}", new Object[]{i, serviceNames[i]});
+        }
+
+        //1. Set network context
+        setupLocalHostInetAddress();
+
+        if ((registryHostIP != null && registryHostPort != null)) {
+            this.registryHostIP = registryHostIP;
+            this.registryHostPort = Integer.parseInt(registryHostPort);
+        } else {
+            this.registryHostIP = this.localHostAddress;
+            this.registryHostPort = 1099;
+        }
+
+        this.serviceUrls = new String[this.serviceNames.length];
+        logger.log(Level.INFO, "serviceUrls.length = {0}", this.serviceUrls.length);
+        for (int i = 0; i < this.serviceUrls.length; i++) {
+            serviceUrls[i] = "rmi://" + this.registryHostIP + ":" + this.registryHostPort + "/" + this.serviceNames[i];
+            logger.log(Level.INFO, "serviceUrls[{0}] = {1}", new Object[]{i, serviceUrls[i]});
+        }
+
+        //2. Set security context - Deprecated for Java 17+
+        //setupSecurityManager();
+
+        //3. Set and list registry context
+        setupRegistryContext(this.registryHostIP, this.registryHostPort);
+    }
+
+    public String getServicesUrl(int i) {
+        return (i < this.serviceUrls.length ? serviceUrls[i] : null);
+    }
+
+    /**
+     * Create a basic network context for RMI
+     */
+    private void setupLocalHostInetAddress() {
+        try {
+            localHostInetAddress = InetAddress.getLocalHost();
+            localHostName = localHostInetAddress.getHostName();
+            localHostAddress = localHostInetAddress.getHostAddress();
+
+            logger.log(Level.INFO, "localHostName = {0}", new Object[]{localHostName});
+            logger.log(Level.INFO, "localHostAddress = {0}", new Object[]{localHostAddress});
+            
+            InetAddress[] allLocalInetAddresses = InetAddress.getAllByName(localHostName);
+            for (InetAddress addr : allLocalInetAddresses) {
+                logger.log(Level.INFO, "addr = {0}", new Object[]{addr});
+            }
+        } catch (UnknownHostException e) {
+            //Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, e);
+            logger.log(Level.SEVERE, "exception {0}", new Object[]{e});
+        }
+    }
+
+    /**
+     * Returns current rmiregistry proxy
+     *
+     * @return
+     */
+    public Registry getRegistry() {
+        return this.registry;
+    }
+
+    /**
+     * Create and install a security manager
+     *
+     */
+    private void setupSecurityManager() {
+        if (System.getSecurityManager() == null) {
+            logger.log(Level.INFO, "set security manager for {0}", subsystemClass.getName());
+            System.setSecurityManager(new SecurityManager());
+        }
+    }
+
+    /**
+     * Setup reference for rmiregistry and list available services
+     *
+     * @param registryHostIP
+     * @param registryHostPort
+     * @return Registry
+     * @throws java.rmi.RemoteException
+     */
+    private void setupRegistryContext(String registryHostIP, int registryHostPort) throws RemoteException {
+        //if (this.subsystemClass.getName().contains(".server.")) {
+        if (isRMIRegistryRunning(registryHostIP, registryHostPort)) {
+            //Client gets reference to already running RMI Registry
+            registry=LocateRegistry.getRegistry(registryHostIP, registryHostPort);
+        } else {
+            // Create embedded RMI Registry (Avoids 'rmiregistry' CLI)
+            registry=LocateRegistry.createRegistry(registryHostPort);
+        }
+        logger.log(Level.INFO,"Embedded RMI Registry started on port {0}...", new Object[]{registryHostPort});
+        if (registry != null) {
+            //List available services
+            String[] registriesList = registry.list();
+            logger.log(Level.INFO, "registriesList.length = {0}", new Object[]{registriesList.length});
+
+            for (int i = 0; i < registriesList.length; i++) {
+                logger.log(Level.INFO, "registriesList[{0}] = {1}", new Object[]{i, registriesList[i]});
+            }
+        } else {
+            logger.log(Level.INFO, "reference to registry is null!!");
+            //registry = LocateRegistry.createRegistry(1099);
+        }
+    }
+
+    public static void printArgs(String classname, String args[]) {
+        for (int i = 0; args != null && i < args.length; i++) {
+            //String t = Thread.currentThread().getName();
+            //Logger.getLogger(this.getClass().getName()).log(Level.INFO, "args[{0}] = {1}", new Object[]{i, args[i]});
+            Logger.getLogger(classname).log(Level.INFO, "args[{0}] = {1}", new Object[]{i, args[i]});
+        }
+    }
+
+    public static boolean isRMIRegistryRunning(String host, int port) {
+        try {
+            Registry registry = LocateRegistry.getRegistry(host, port);
+            registry.list(); // Attempt to list bound services
+            return true; // If no exception, registry is running
+        } catch (Exception e) {
+            return false;   // Registry not running
+        }
+    }
+}
+package edu.ufp.inf.sd.rmi.util.threading;
+
+import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ * When task creation frequency is high and mean task duration is low
+ * use thread pool instead of creating a new thread for each request.
+ * 
+ * The thread pool size depends on the number of available processors (N)
+ * and the nature of the tasks.
+ * i) For compute-bounded tasks:
+ *      => Thread pool size = N or N+1 threads.
+ * ii) For tasks that wait for I/O to complete:
+ *      => Thread pool size = N*(1+WT/ST).
+ * Use profiling to determine WT (mean waiting time) and ST (mean service time).
+ */
+public class ThreadPool {
+
+    /** Size of the array/pool of threads */
+    private final int poolsize;
+    //
+    /** Array of threads that compete for running Runnable Sessions */
+    private final PoolThread[] poolAvailableThreads;
+    /** List of Runnable Sessions that will be picked (one-by-one) in FIFO 
+     * manner by the existing threads */
+    private final LinkedList<Runnable> listRunnableThreads = new LinkedList();
+
+    /**
+     * Constructor of the pool of threads.
+     * @param nt - number of Threads
+     */
+    public ThreadPool(int nt) {
+        this.poolsize = nt;
+        poolAvailableThreads = new PoolThread[this.poolsize];
+
+        this.startThreadPoll();
+    }
+    
+    /**
+     * Creates and starts the pool of threads.
+     */
+    private void startThreadPoll(){
+        for (int i = 0; i < this.poolsize; i++) {
+            poolAvailableThreads[i] = new PoolThread();
+            poolAvailableThreads[i].start();
+        }
+    }
+
+    /**
+     * Adds a Runnable Session to the end of the list and notifies/awakes
+     * one of the threads waiting to run.
+     * 
+     * @param r - Runnable instance to be executed inside a thread
+     */
+    public void execute(Runnable r) {
+        synchronized (listRunnableThreads) {
+            listRunnableThreads.addLast(r);
+            listRunnableThreads.notify();
+        }
+    }
+    
+    /**
+     * Removes a Runnable MAIL_FROM_ADDR the list of runnables
+     * @param r 
+     */
+    public void remove(Runnable r) {
+        synchronized (listRunnableThreads) {
+            listRunnableThreads.remove(r);
+            listRunnableThreads.notify();
+        }
+    }
+
+    /**
+     * Each instance of PoolThread waits on the list of Runnable Sessions to
+     * pick a Runnable and run it.
+     */
+    private class PoolThread extends Thread {
+
+        /**
+         * Waits on the monitor of the list of Runnable Sessions until it is
+         * able to pick a Runnable and execute/run it.
+         */
+        public void run() {
+            Runnable r;
+            while (true) {
+                //Wait on the monitor associated with the list of runnables
+                synchronized (listRunnableThreads) {
+                    while (listRunnableThreads.isEmpty()) {
+                        try {
+                            listRunnableThreads.wait();
+                        } catch (InterruptedException ex) {
+                            Logger.getLogger(ThreadPool.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }
+                    r = (Runnable) listRunnableThreads.removeFirst();
+                }
+
+                // Catch RuntimeException to avoid pool leaks
+                try {
+                    r.run();
+                } catch (RuntimeException e) {
+                    Logger.getLogger(ThreadPool.class.getName()).log(Level.SEVERE, null, e);
+                }
+            }
+        }
+    }
+}

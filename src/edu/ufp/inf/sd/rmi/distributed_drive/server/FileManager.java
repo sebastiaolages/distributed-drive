@@ -53,9 +53,11 @@ public class FileManager {
     public static void deleteFileInClientAndServer(String username, String filename) {
         File clientFile = new File(getClientLocalFolder(username), filename);
         File serverFile = new File(getServerLocalFolder(username), filename);
+        File sharedFile = new File(getClientSharedFolder(username), filename);
 
         if (clientFile.exists()) clientFile.delete();
         if (serverFile.exists()) serverFile.delete();
+        if (sharedFile.exists()) sharedFile.delete();
     }
 
     public static void renameFileInClientAndServer(String username, String oldName, String newName) {
@@ -65,8 +67,12 @@ public class FileManager {
         File serverOldFile = new File(getServerLocalFolder(username), oldName);
         File serverNewFile = new File(getServerLocalFolder(username), newName);
 
+        File sharedOldFile = new File(getClientSharedFolder(username), oldName);
+        File sharedNewFile = new File(getClientSharedFolder(username), newName);
+
         if (clientOldFile.exists()) clientOldFile.renameTo(clientNewFile);
         if (serverOldFile.exists()) serverOldFile.renameTo(serverNewFile);
+        if (sharedOldFile.exists()) sharedOldFile.renameTo(sharedNewFile);
     }
 
     public static void shareFile(String originUsername, String filename, String targetUsername) throws IOException {
@@ -87,7 +93,34 @@ public class FileManager {
         }
     }
 
-    // NOVAS FUNÇÕES – Gestao de Pastas
+    public static void shareFolder(String originUsername, String folderName, String targetUsername) throws IOException {
+        File originFolder = new File(getClientLocalFolder(originUsername), folderName);
+        File targetSharedFolder = new File(getClientSharedFolder(targetUsername), folderName);
+        File targetServerFolder = new File(getServerLocalFolder(targetUsername), folderName);
+
+        if (!originFolder.exists() || !originFolder.isDirectory()) {
+            throw new IOException("A pasta a partilhar não existe ou não é uma pasta.");
+        }
+
+        copyFolder(originFolder, targetSharedFolder);
+        copyFolder(originFolder, targetServerFolder);
+    }
+
+    private static void copyFolder(File source, File destination) throws IOException {
+        if (source.isDirectory()) {
+            if (!destination.exists()) {
+                destination.mkdirs();
+            }
+            String[] children = source.list();
+            if (children != null) {
+                for (String file : children) {
+                    copyFolder(new File(source, file), new File(destination, file));
+                }
+            }
+        } else {
+            Files.copy(source.toPath(), destination.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
 
     public static void createFolder(String username, String folderName) {
         File localFolder = new File(getClientLocalFolder(username), folderName);
@@ -100,9 +133,11 @@ public class FileManager {
     public static void deleteFolder(String username, String folderName) {
         File localFolder = new File(getClientLocalFolder(username), folderName);
         File serverFolder = new File(getServerLocalFolder(username), folderName);
+        File sharedFolder = new File(getClientSharedFolder(username), folderName);
 
         deleteRecursive(localFolder);
         deleteRecursive(serverFolder);
+        deleteRecursive(sharedFolder);
     }
 
     public static void renameFolder(String username, String oldName, String newName) {
@@ -112,8 +147,12 @@ public class FileManager {
         File serverOld = new File(getServerLocalFolder(username), oldName);
         File serverNew = new File(getServerLocalFolder(username), newName);
 
+        File sharedOld = new File(getClientSharedFolder(username), oldName);
+        File sharedNew = new File(getClientSharedFolder(username), newName);
+
         localOld.renameTo(localNew);
         serverOld.renameTo(serverNew);
+        sharedOld.renameTo(sharedNew);
     }
 
     public static List<String> listAllRecursive(File dir, String prefix) {
